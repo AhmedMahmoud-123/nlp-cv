@@ -1,113 +1,220 @@
-# NLP Assignment — Resume Domain Classification & Overfitting Baseline
-## Environment Setup & Reproduction
+# Resume Domain Classification Project
+
+This repository contains a resume-domain classification workflow for multi-class job category prediction from raw CV text. The project includes a deliberately overfit Vanilla LSTM baseline, a stronger pooled LSTM comparison model, and experiment artifacts for benchmarking model quality and generalization.
+
+The project is designed to demonstrate both:
+
+- the failure mode of an unregularized recurrent model on a noisy text classification task
+- the substantial improvement gained by using a pooled sequence representation with a matched architecture
+
+---
+
+## Overview
+
+The goal of this project is to classify resumes into one of 24 professional domains using cleaned text from CV documents. This is a text classification problem with class imbalance, long sequences, and domain-specific vocabulary.
+
+The repository includes:
+
+- a preprocessing and stratified splitting pipeline
+- repeated experiments with LSTM-based models
+- evaluation metrics for train/validation/test performance
+- confusion-matrix and training-curve visualizations
+- a comparison between a standard LSTM and a pooled LSTM
+
+---
+
+## Repository Structure
+
+```text
+nlp-cv/
+├── README.md
+├── requirements.txt
+├── data/
+│   └── .gitkeep
+├── models/
+│   ├── baseline_metrics.json
+│   ├── confusion_matrix.png
+│   ├── history.json
+│   ├── history_pooled_lstm.json
+│   ├── normal_lstm_matched.pt
+│   ├── normal_lstm_matched_history.json
+│   ├── normal_vs_pooled_lstm_comparison.csv
+│   ├── normal_vs_pooled_lstm_test_metrics.png
+│   ├── normal_vs_pooled_lstm_training_curves.png
+│   ├── overfitting_curves.png
+│   ├── pooled_lstm_confusion_matrix.png
+│   ├── pooled_lstm_metrics.json
+│   ├── pooled_lstm_test_metrics.png
+│   ├── pooled_lstm_training_curves.png
+│   ├── vanilla_lstm_overfit.pt
+│   └── vanilla_lstm_pooled_lstm.pt
+├── notebooks/
+│   ├── README.md
+│   └── resume_lstm_pipeline_comparison_focused.ipynb
+└── .gitignore
+```
+
+---
+
+## Pipeline
+
+### 1) Data preparation
+The workflow begins with text cleaning and normalization:
+
+- lowercasing
+- handling Unicode/full-width character issues
+- removing formatting artifacts and bullets
+- whitespace normalization
+- preservation of technical tokens such as C++, C#, and R&D
+
+The processed text is then split into train/validation/test sets using a stratified approach to preserve label balance.
+
+### 2) Vocabulary and label encoding
+The vocabulary is built from the training split only to prevent leakage. The label encoder maps the 24 target classes to integer IDs.
+
+### 3) Sequence representation
+Each resume is tokenized and padded/truncated to a fixed length of 400 tokens, producing integer sequences ready for PyTorch training.
+
+### 4) Model training
+The project compares:
+
+- a standard Vanilla LSTM which uses the final hidden state for classification
+- a pooled LSTM which combines mean and max pooling across the time dimension
+
+---
+
+## Dataset
+
+This project is built for resume-domain classification using real-world CV text. The intended data layout is:
+
+```text
+data/
+├── raw/
+│   └── resume.csv
+├── preprocessed/
+│   ├── train.csv
+│   ├── val.csv
+│   ├── test.csv
+│   ├── vocab.json
+│   └── label_encoder.json
+```
+
+The original dataset contains resumes across 24 categories, with the final preprocessing pipeline producing train/validation/test splits suitable for benchmarking machine learning models.
+
+---
+
+## Experimental Highlights
+
+### Vanilla LSTM overfitting baseline
+The baseline model is intentionally trained with no regularization to highlight memorization behavior and overfitting.
+
+Key observations:
+
+- train accuracy rises to around 91.6%
+- validation accuracy collapses to about 8.3%
+- validation loss increases substantially after the first few epochs
+- the model shows a large generalization gap and poor out-of-sample performance
+
+This is a classic overfitting demonstration and provides the benchmark against which better models are compared.
+
+### Pooling-based LSTM comparison
+The improved architecture uses pooled LSTM representations rather than only the final hidden state. This produces much better generalization and stronger performance on the held-out test set.
+
+---
+
+## Results Summary
+
+| Model | Best Validation Loss | Best Val Accuracy | Test Accuracy | Macro F1 |
+|---|---:|---:|---:|---:|
+| Vanilla LSTM (final hidden state) | 3.1269 | 8.29% | 11.17% | 9.82% |
+| Pooled LSTM (mean + max pooling) | 0.9175 | 75.69% | 73.86% | 66.76% |
+
+The pooled LSTM substantially outperforms the baseline, reducing the generalization gap and delivering strong classification performance across the 24 classes.
+
+---
+
+## Important Metrics
+
+From the repository artifacts:
+
+- Vanilla LSTM parameters: 2,847,768
+- Pooled LSTM parameters: 2,058,264
+- Pooled LSTM test accuracy: 73.86%
+- Pooled LSTM macro F1: 66.76%
+- Generalization gap for pooled LSTM: ~17.66%
+
+These numbers show that the improved architecture successfully moves the system from severe overfitting toward a practical classification model.
+
+---
+
+## Notebook
+
+The main notebook is:
+
+- `notebooks/resume_lstm_pipeline_comparison_focused.ipynb`
+
+It covers:
+
+- preprocessing and splitting
+- custom dataset creation
+- training loops for different model variants
+- evaluation and metric comparison
+- plotting of training curves and confusion matrices
+
+---
+
+## Reproduction
+
+### Environment setup
 
 ```bash
-# 1. Activate virtual environment
-# Windows:
+# create and activate a virtual environment
+python -m venv .venv
+# Windows
 .venv\Scripts\activate
+# Linux/macOS
+source .venv/bin/activate
 
-# 2. Install dependencies
+# install dependencies
 pip install -r requirements.txt
 ```
 
----
-## Project Structure
+### Run the notebook
+Open the comparison notebook in Jupyter or VS Code and execute the cells in order.
 
-```text
-CV/
-├── requirements.txt                       # Pinned Python dependencies
-├── data/
-│   ├── raw/
-│   │   └── resume.csv                     # Raw dataset (2,484 resumes, 24 categories)
-│   └── preprocessed/                      # Generated by notebook Section 1
-│       ├── train.csv                      # 1,728 samples (70% stratified)
-│       ├── val.csv                        # 362 samples (15% stratified)
-│       ├── test.csv                       # 394 samples (15% stratified)
-│       ├── vocab.json                     # 15,000 word vocabulary (from train set only)
-│       └── label_encoder.json             # 24 category mappings (0..23)
-├── models/                                # Checkpoints & experiment visualizations
-│   ├── vanilla_lstm_overfit.pt            # PyTorch checkpoint (34.2 MB)
-│   ├── history.json                       # Per-epoch loss & accuracy log
-│   ├── baseline_metrics.json              # Standardized JSON metrics for Step 3 benchmarking
-│   ├── overfitting_curves.png             # Training vs. validation divergence curves
-│   └── confusion_matrix.png               # Normalized 24x24 test confusion matrix heatmap
-└── notebooks/
-    └── resume_lstm_pipeline.ipynb         # End-to-end interactive pipeline notebook
-```
+### Expected output artifacts
+The notebook generates and updates files under `models/`, including:
+
+- training curves
+- confusion matrices
+- comparison CSV summaries
+- evaluation metrics JSON files
 
 ---
 
-## Dataset Overview (`data/raw/resume.csv`)
+## Notes
 
-- **Total Documents**: 2,484 real-world English CVs scraped from the LiveCareer resume builder.
-- **Task**: Multi-class classification across **24 job domains** 
-- **Document Length**: Resumes average ~6,300 characters (median **755 words**, maximum 5,209 words).
-- **Sequence Length**: Padded / truncated to `MAX_LEN = 400` words, capturing dense summary statements, technical proficiencies, and recent job roles.
+This project is especially useful for learning:
 
----
-
-## Pipeline Walkthrough (`notebooks/resume_lstm_pipeline.ipynb`)
-
-### Section 1: Preprocessing & Stratified Splitting
-- **`clean_text`**: Lowercases, replaces full-width unicode characters and bullets with ASCII, collapses whitespace, and preserves critical technical tokens (e.g., `C++`, `R&D`, `C#`).
-- **`stratified_split`**: Partitions 70% Train (1,728), 15% Validation (362), and 15% Test (394). Preserves class balance even for low-frequency classes (`BPO=22`: 15 train / 3 val / 4 test; `AUTOMOBILE=36`: 25 train / 5 val / 6 test).
-- **`build_vocab`**: Extracts the 15,000 most frequent tokens strictly from the **training split** to prevent data leakage (`<PAD> = 0`, `<UNK> = 1`).
-- **`build_label_encoder`**: Maps the 24 categories alphabetically to integers `0..23`.
-
-### Section 2: PyTorch Dataset & DataLoaders
-- **`ResumeDataset`**: Converts cleaned text into fixed-length `(400,)` integer token vectors (`torch.int64`) and category labels into class indices (`torch.int64`).
-- **DataLoaders**:
-  - `train_loader`: 27 batches (1,728 samples, `batch_size=64`, `shuffle=True`)
-  - `val_loader`: 6 batches (362 samples, `shuffle=False`)
-  - `test_loader`: 7 batches (394 samples, `shuffle=False`)
-
-### Section 3: Model Architecture (`VanillaLSTMClassifier`)
-A classical recurrent neural network architecture:
-- **Embedding**: `nn.Embedding(15000, 128, padding_idx=0)`
-- **Recurrent Core**: 2-layer unidirectional `nn.LSTM(128, 256, num_layers=2, batch_first=True)`
-- **Sequence Representation**: Top-layer final hidden state $h_T \in \mathbb{R}^{256}$
-- **Classification Head**: `nn.Linear(256, 24)`
-- **Total Trainable Parameters**: **2,847,768**
-
-### Section 4: Overfitting Experiment
-The model is trained for 12 epochs using Adam (`lr=0.001`), Cross-Entropy Loss, and zero regularization:
-
-| Epoch | Train Loss | Train Accuracy | Val Loss | Val Accuracy | Behavior |
-|:---:|:---:|:---:|:---:|:---:|---|
-| **01** | 3.1645 | 3.94% | 3.1330 | 6.91% | Random guessing baseline ($\approx 1/24 = 4.17\%$) |
-| **02** | 3.0793 | 9.72% | **3.1269** | 7.18% | **Global Minimum Validation Loss (Optimal Epoch)** |
-| **04** | 2.5702 | 25.17% | 3.3130 | 11.05% | Validation loss begins ascending |
-| **06** | 1.5454 | 56.89% | 3.6854 | 8.84% | Model transitions to memorizing training samples |
-| **08** | 0.7399 | 81.25% | 4.4205 | 9.39% | Severe divergence underway |
-| **10** | 0.3535 | 90.45% | 4.9869 | 8.56% | Training loss drops below 0.36 |
-| **12** | **0.2841** | **91.67%** | **5.2308** | **8.29%** | **Severe Overfitting (+2.10 Val Loss Divergence)** |
-
-#### Proof of Overfitting:
-1. **Generalization Gap**: Train Accuracy reached **91.67%** while Validation Accuracy dropped to **8.29%** (a gap of **83.38%**).
-2. **Loss Divergence**: Validation loss hit a minimum of **3.1269** at Epoch 2 and exploded to **5.2308** by Epoch 12 (+2.1039 divergence), demonstrating that additional epochs degraded out-of-sample performance.
-
-### Section 5: Held-Out Test Evaluation & Error Analysis
-The frozen overfitted model was evaluated on the **394 completely unseen test resumes**:
-
-| Metric | Overfitted Baseline Result |
-|---|---|
-| **Test Loss** | **5.2152** |
-| **Test Accuracy** | **10.15%** |
-| **Macro F1 Score** | **9.01%** |
-| **Macro Precision** | **9.44%** |
-| **Macro Recall** | **9.47%** |
+- how overfitting appears in sequence models
+- why validation monitoring matters during training
+- how pooled representations can improve text classification with long inputs
+- how to benchmark and compare neural model variants systematically
 
 ---
 
-## Step 3 Benchmark Reference Table
+## License
 
-| Metric | Overfitted Vanilla LSTM Baseline | Target for Step 3 Paper |
-|---|:---:|:---:|
-| **Train Accuracy** | **91.67%** | Control / balance |
-| **Validation Accuracy** | **8.29%** | **Substantial increase** |
-| **Generalization Gap** | **83.38%** | **Drastic reduction (< 15–20%)** |
-| **Test Accuracy** | **10.15%** | **Increase (Target > 60–75%)** |
-| **Test Macro F1** | **9.01%** | **Increase across all 24 classes** |
-| **Validation Loss** | **5.2308** | **Prevent explosion / early stopping** |
+This project is intended for educational and research use. Please check the repository settings and local institutional requirements before using the code in a production or publication setting.
 
+---
 
+## Future Improvements
+
+Potential next steps include:
+
+- experimenting with transformer-based encoders
+- adding class-weighted loss for rare categories
+- performing calibration and error analysis by class
+- testing attention-based models for resume classification
+- adding a proper public dataset card and training reproducibility guide
