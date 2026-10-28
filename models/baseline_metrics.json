@@ -1,0 +1,17 @@
+{
+  "model_type": "Vanilla LSTM",
+  "num_parameters": 2847768,
+  "epochs_trained": 12,
+  "train_loss": 0.2841142255950857,
+  "train_accuracy": 0.9166666666666666,
+  "val_loss": 5.230825587530821,
+  "val_accuracy": 0.08287292817679558,
+  "best_val_loss": 3.126891618275511,
+  "best_val_epoch": 2,
+  "test_loss": 5.215178689375747,
+  "test_accuracy": 0.10152284263959391,
+  "test_macro_f1": 0.09007811685569107,
+  "test_macro_precision": 0.09443753171431744,
+  "test_macro_recall": 0.09472752551312923,
+  "generalization_gap_acc": 83.3793738489871
+}

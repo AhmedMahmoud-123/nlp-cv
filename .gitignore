@@ -1,2 +1,18 @@
-data/processed/
+# Virtual environment
+.venv/
+env/
+venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+
+# Data
 data/raw/
+data/processed/
+data/preprocessed/
+
+# Model checkpoints (optional to ignore or track, ignore large weights)
+# models/*.pt
