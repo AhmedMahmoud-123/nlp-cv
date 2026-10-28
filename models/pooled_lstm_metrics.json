@@ -1,0 +1,15 @@
+{
+  "model_type": "Pooled LSTM (Mean + Max Pooling)",
+  "num_parameters": 2058264,
+  "epochs_trained": 30,
+  "best_val_epoch": 29,
+  "best_val_loss": 0.9174765038885464,
+  "train_acc_at_best": 0.8246527777777778,
+  "val_acc_at_best": 0.7569060773480663,
+  "test_loss": NaN,
+  "test_accuracy": 0.7385786802030457,
+  "test_macro_f1": 0.6676319855398601,
+  "test_macro_precision": 0.6687918934198297,
+  "test_macro_recall": 0.6787837905630089,
+  "generalization_gap_acc_pct": 17.658456108041747
+}
